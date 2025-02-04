@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.0.0/split.min.js"
+        integrity="sha512-tTsZnBXEzNdEaqUO9Ok8fUofS73xieiBa54pD/sxOSvayIgItM9MmEM0CnUjA13LDnJT22sfwmjf20+Bo2174g=="
+        crossorigin="anonymous"></script>
+    <script src="ui.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <span>
+        <div class="headerRow">
+            <h>HTML Editor</h>
+            <!--<button onclick="saveFile()">Export File</button>-->
+        </div>
+        <div class="buttonRow">
+            <span>
+                <button id="htmlbtn" class="selectedButton" onclick="changePage('html')">HTML</button>
+                <button id="cssbtn" onclick="changePage('css')">CSS</button>
+                <button id="jsbtn" onclick="changePage('js')">JS</button>
+            </span>
+            <button id="previewbtn" onclick="changePage('preview')">Preview</button>
+        </div>
+    </span>
+    <div class="main">
+        <textarea class="display" id="htmlCode" placeholder="Write HTML code..." spellcheck="false" oninput="update(0)"
+            onkeydown="if(event.keyCode===9){var v=this.value,s=this.selectionStart,e=this.selectionEnd;this.value=v.substring(0, s)+'\t'+v.substring(e);this.selectionStart=this.selectionEnd=s+1;return false;}if(event.keyCode==8){update(1);}"></textarea>
+        <textarea class="hidden" id="cssCode" placeholder="Write CSS code..." spellcheck="false" oninput="update(0)"
+            onkeydown="if(event.keyCode===9){var v=this.value,s=this.selectionStart,e=this.selectionEnd;this.value=v.substring(0, s)+'\t'+v.substring(e);this.selectionStart=this.selectionEnd=s+1;return false;}if(event.keyCode==8){update(1);}"></textarea>
+        <textarea class="hidden" id="javascriptCode" spellcheck="false" placeholder="Write JavaScript code..." oninput="update(0)"
+            onkeydown="if(event.keyCode===9){var v=this.value,s=this.selectionStart,e=this.selectionEnd;this.value=v.substring(0, s)+'\t'+v.substring(e);this.selectionStart=this.selectionEnd=s+1;return false;}if(event.keyCode==8){update(1);}"></textarea>
+        <iframe class="hidden" id="viewer"></iframe>
+    </div>
+</body>
+<script src="main.js"></script>
+</html>
+
+<script>
+ 
+var j = 0;
+
+document.getElementById("htmlCode").value = localStorage.getItem('htmlCode');
+document.getElementById("cssCode").value = localStorage.getItem('cssCode');
+document.getElementById("javascriptCode").value = localStorage.getItem('javascriptCode');
+
+function update(i) {
+    if (i == 0) {
+        let htmlCode = document.getElementById("htmlCode").value;
+        let cssCode = document.getElementById("cssCode").value;
+        let javascriptCode = document.getElementById("javascriptCode").value;
+        let text = htmlCode + "<style>" + cssCode + "</style>" + "<scri" + "pt>" + javascriptCode + "</scri" + "pt>";
+        let iframe = document.getElementById('viewer').contentWindow.document;
+        iframe.open();
+        iframe.write(text);
+        iframe.close();
+    }
+
+    else if (i == 1) {
+
+        let htmlCode = document.getElementById("htmlCode").value;
+        let html = htmlCode.slice(0, htmlCode.length);
+        document.getElementById("htmlCode").value = html;
+        j = 1;
+
+    }
+
+}
+
+const closeChars = new Map([
+    ['{', '}'],
+    ['[', ']'],
+    ['(', ')'],
+    ['<', '>'],
+    ['"', '"'],
+    ["'", "'"]
+
+]);
+
+
+htmlCode = document.getElementById('htmlCode');
+htmlCode.addEventListener('input', function (e) {
+    localStorage.setItem('htmlCode', document.getElementById("htmlCode").value);
+    if (j != 1) {
+        const pos = e.target.selectionStart;
+        const val = [...e.target.value];
+        const char = val.slice(pos - 1, pos)[0];
+        const closeChar = closeChars.get(char);
+        if (closeChar) {
+            val.splice(pos, 0, closeChar);
+            e.target.value = val.join('');
+            e.target.selectionEnd = pos;
+        }
+    }
+    j = 0;
+});
+
+cssCode = document.getElementById('cssCode');
+cssCode.addEventListener('input', function (e) {
+    localStorage.setItem('cssCode', document.getElementById("cssCode").value);
+    if (j != 1) {
+        const pos = e.target.selectionStart;
+        const val = [...e.target.value];
+        const char = val.slice(pos - 1, pos)[0];
+        const closeChar = closeChars.get(char);
+        if (closeChar) {
+            val.splice(pos, 0, closeChar);
+            e.target.value = val.join('');
+            e.target.selectionEnd = pos;
+        }
+    }
+    j = 0;
+});
+
+javascriptCode = document.getElementById('javascriptCode');
+javascriptCode.addEventListener('input', function (e) {
+    localStorage.setItem('javascriptCode', document.getElementById("javascriptCode").value);
+    if (j != 1) {
+        const pos = e.target.selectionStart;
+        const val = [...e.target.value];
+
+        const char = val.slice(pos - 1, pos)[0];
+        const closeChar = closeChars.get(char);
+
+        if (closeChar) {
+            val.splice(pos, 0, closeChar);
+            e.target.value = val.join('');
+            e.target.selectionEnd = pos;
+        }
+    }
+    j = 0;
+});
+
+function saveFile() {
+    var fileName=prompt("File name:", "");
+    if (fileName != null && (document.getElementById("htmlCode").value != "" || document.getElementById("cssCode").value != "" || document.getElementById("javascriptCode").value != "")){
+        var htmlCode=document.getElementById('htmlCode').value;
+        var cssCode=document.getElementById('cssCode').value;
+        var javascriptCode=document.getElementById('javascriptCode').value;
+        let text=htmlCode+"<style>"+cssCode+"</style>"+"<scri"+"pt>"+javascriptCode+"</scri"+"pt>";
+        download(text, fileName + ".html", "text/plain");
+    }
+    else{
+        alert("Please choose a file name and make sure that the file is not blank");
+    }
+}
+
+function download(data, filename, type) {
+    var userFile = new Blob([data], { type: type });
+    var a = document.createElement("a"),
+    url = URL.createObjectURL(userFile);
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }, 0);
+}
+</script>
+ 
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans&display=swap');
+
+* {
+    color: white;
+    font-family: 'IBM Plex Sans', sans-serif;
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
+
+.headerRow {
+    display: flex;
+    flex-direction: row;
+    align-items: top;
+    justify-content: space-between;
+}
+
+textarea {
+    font-family: 'IBM Plex Mono', monospace;
+    border-radius: 21px;
+    background-color: black;
+    border: none;
+    resize: none;
+    height: 100%;
+    width: 100%;
+    outline: none;
+    padding: 15px;
+    margin: 0;
+    font-size: 17px;
+}
+
+body {
+    background-color: rgb(51, 51, 51);
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.buttonRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.buttonRow button {
+    margin-bottom: 5px;
+    transition: .2s;
+}
+
+button {
+    background-color: rgb(10, 28, 64);
+    border: none;
+    border-radius: 21px;
+    font-size: 17px;
+    padding: 10px 15px;
+    margin: 0;
+}
+
+.headerRow button {
+    background-color: rgba(255, 255, 255, 0) !important;
+    color: white;
+}
+
+.main {
+    height: calc(100vh - 147px);
+}
+
+.display {
+    display: unset;
+}
+
+.hidden {
+    display: none;
+}
+
+.selectedButton {
+    background-color: black;
+    margin-bottom: 0!important;
+    padding-bottom: 15px;
+    border-radius: 21px 21px 0 0;
+}
+
+#htmlCode {
+    border-top-left-radius: 0;
+}
+
+#viewer {
+    width: 100%;
+    height: 100%;
+    border-radius: 21px 0 21px 21px;
+    border: none;
+    background-color: white;
+}
+</style>
+
+<script>
+ 
+"use strict"
+
+var page = "html"
+
+function updatePage() {
+    if (page == "html") {
+        document.getElementById("htmlCode").classList = "display"
+        document.getElementById("cssCode").classList = "hidden"
+        document.getElementById("javascriptCode").classList = "hidden"
+        document.getElementById("viewer").classList = "hidden"
+        document.getElementById("htmlbtn").classList = "selectedButton"
+        document.getElementById("cssbtn").classList = ""
+        document.getElementById("jsbtn").classList = ""
+        document.getElementById("previewbtn").classList = ""
+    } else if (page == "css") {
+        document.getElementById("htmlCode").classList = "hidden"
+        document.getElementById("cssCode").classList = "display"
+        document.getElementById("javascriptCode").classList = "hidden"
+        document.getElementById("viewer").classList = "hidden"
+        document.getElementById("htmlbtn").classList = ""
+        document.getElementById("cssbtn").classList = "selectedButton"
+        document.getElementById("jsbtn").classList = ""
+        document.getElementById("previewbtn").classList = ""
+    } else if (page == "js") {
+        document.getElementById("htmlCode").classList = "hidden"
+        document.getElementById("cssCode").classList = "hidden"
+        document.getElementById("javascriptCode").classList = "display"
+        document.getElementById("viewer").classList = "hidden"
+        document.getElementById("htmlbtn").classList = ""
+        document.getElementById("cssbtn").classList = ""
+        document.getElementById("jsbtn").classList = "selectedButton"
+        document.getElementById("previewbtn").classList = ""
+    } else if (page == "preview") {
+        document.getElementById("htmlCode").classList = "hidden"
+        document.getElementById("cssCode").classList = "hidden"
+        document.getElementById("javascriptCode").classList = "hidden"
+        document.getElementById("viewer").classList = "display"
+        document.getElementById("htmlbtn").classList = ""
+        document.getElementById("cssbtn").classList = ""
+        document.getElementById("jsbtn").classList = ""
+        document.getElementById("previewbtn").classList = "selectedButton"
+    }
+}
+
+function changePage(desiredPage) {
+    page = desiredPage
+    updatePage()
+}
+</script>
+ 

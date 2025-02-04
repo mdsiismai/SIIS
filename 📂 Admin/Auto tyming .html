@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<!-- saved from url=(0044)https://cdpn.io/leimapapa/fullcpgrid/jOdjrgV -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  
+
+    <link rel="apple-touch-icon" type="image/png" href="https://cpwebassets.codepen.io/assets/favicon/apple-touch-icon-5ae1a0698dcc2402e9712f7d01ed509a57814f994c660df9f7a952f3060705ee.png">
+
+    <meta name="apple-mobile-web-app-title" content="CodePen">
+
+    <link rel="shortcut icon" type="image/x-icon" href="https://cpwebassets.codepen.io/assets/favicon/favicon-aec34940fbc1a6e787974dcd360f2c6b63348d4b1f4e06c77743096d55480f33.ico">
+
+    <link rel="mask-icon" type="image/x-icon" href="https://cpwebassets.codepen.io/assets/favicon/logo-pin-b4b4269c16397ad2f0f7a01bcdf513a1994f4c94b8af2f191c09eb0d601762b1.svg" color="#111">
+
+
+
+  
+    <style>*, *::before, *::after { animation-play-state: paused !important; }</style><script src="./stopExecutionOnTimeout-2c7831bb44f98c1391d6a4ffda0e1fd302503391ca806e7fcc7b9b87197aec26.js.download"></script>
+
+
+  <title>CodePen - Simplest Digital Clock (SVG)</title>
+
+    <link rel="canonical" href="https://codepen.io/leimapapa/pen/jOdjrgV">
+  
+ 
+  
+
+
+<style>
+body {
+	background: #2B55DD;
+}
+#clock {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: calc(100vw - 4px);
+	height: auto;
+	max-width: 300px;
+}
+</style>
+
+  <script>
+  window.console = window.console || function(t) {};
+  var consoleWarn = window.console.warn;
+  function warn(){ consoleWarn.apply(console, arguments); }
+  window.open = function(){ warn("window.open is disabled."); };
+  window.print   = function(){ warn("window.print is disabled."); };
+  window.alert   = function(){ warn("window.alert is disabled."); };
+  window.confirm = function(){ warn("window.confirm is disabled."); };
+  window.prompt  = function(){ warn("window.prompt is disabled."); };
+  window.Notification = function() { warn("HTML5 notifications are disabled."); };
+  function noop(){}
+  Object.keys(window.console).map(function(key){
+    window.console[key] = noop
+  });
+</script>
+
+  
+    <script>
+    (function() {
+      /*
+      * Capture all errors for this pen
+      **/
+      window.onerror = function(/* message, file, line */) {
+        return true;
+      };
+
+      /*
+      * Capture and kill Web Audio and Speech
+      */
+      if (typeof (AudioContext) != "undefined" || typeof (webkitAudioContext) != "undefined") {
+        AudioContext = function() {
+          return false;
+        };
+
+        webkitAudioContext = function() {
+          return false;
+        };
+      }
+
+      if (typeof (mozAudioContext) != "undefined") {
+        mozAudioContext = function() {
+          return false;
+        };
+      }
+
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis = {};
+      }
+      if ("speak" in speechSynthesis) {
+        speechSynthesis.speak = function() {
+          return false;
+        };
+      }
+
+      // Kill the browser asking for access to the video cam or audio
+      navigator.getUserMedia = function() {
+      };
+      navigator.mozGetUserMedia = function() {
+      };
+      navigator.webkitGetUserMedia = function() {
+      };
+      navigator.mediaDevices.getUserMedia = function() {
+      };
+
+
+      /**
+      * Capture and kill animations after X number of seconds
+      **/
+      var __animationDuration = 4000;
+      var __animationsTimedOut = false;
+      var __animationRequests = [];
+      var __requestAnimationFrame = false;
+      var __cancelAnimationFrame = false;
+      var x, i;
+
+      var vendorsRequestAnimationFrame = [
+        "requestAnimationFrame",
+        "mozRequestAnimationFrame",
+        "webkitRequestAnimationFrame"
+      ];
+
+      // find the browsers requestAnimationFrame and cancelAnimationFrame
+      for (x = 0; x < vendorsRequestAnimationFrame.length; x++) {
+        if (!__requestAnimationFrame) {
+          __requestAnimationFrame = window[vendorsRequestAnimationFrame[x]
+          ];
+        }
+      }
+
+      __cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+
+      // Wrap the requestAnimationFrame so we can stop it in the future
+      function __reqFrame(callback, element) {
+        // after the timeout we no longer take requests
+        var timerID;
+        if (__animationsTimedOut) {
+          return 0;
+        } else {
+          timerID = __requestAnimationFrame(callback, element);
+          __animationRequests.push(timerID);
+
+          return timerID;
+        }
+      }
+
+      for (x = 0; x < vendorsRequestAnimationFrame.length; x++) {
+        window[vendorsRequestAnimationFrame[x]] = __reqFrame;
+      }
+
+      // Cancel the animations after expiration
+      setTimeout(function() {
+        for (i = 0; i < __animationRequests.length; i++) {
+          __cancelAnimationFrame(__animationRequests[i]);
+        }
+
+        var ss = window.document.createElement("style");
+        ss.textContent = "*, *::before, *::after { animation-play-state: paused !important; }";
+        var ref = window.document.getElementsByTagName("script")[0];
+        ref.parentNode.insertBefore(ss, ref);
+
+        __animationsTimedOut = true;
+      }, __animationDuration, "push");
+
+      /**
+      * Capture setInterval and setTimeout to kill after X number of seconds
+      **/
+      window.setInterval = (function(oldSetInterval) {
+        var registered = [];
+
+        function f(a,b) {
+          // check if the time has expired,
+          // after __animationDuration expires don't take anymore setIntervals
+          if (this.timedOut) {
+            return 0;
+          } else {
+            return registered[ registered.length ] = oldSetInterval(a,b);
+          }
+        }
+
+        f.clearAll = function() {
+          var r;
+
+          while (r = registered.pop()) {
+            clearInterval( r );
+          }
+
+          this.timedOut = true;
+        };
+
+        f.timedOut = false;
+
+        return f;
+      }(window.setInterval));
+
+      window.setTimeout = (function(oldSetTimeout) {
+        var registered = [];
+
+        // because some of our timeouts may time out afterwards
+        // we want to make sure they know the secret sauce to still use
+        // setTimeout after the time has expired, thats why we have a
+        // third param
+        function f(a, b, push) {
+          // check if the time has expired,
+          // after __animationDuration expires don't take anymore requests
+          if (this.timedOut && typeof(push) == "undefined") {
+            return 0;
+          } else {
+            // If push is there, never clear that interval
+            // so never add it to the registry
+            if (push) {
+              return oldSetTimeout(a,b);
+            } else {
+              return registered[ registered.length ] = oldSetTimeout(a,b);
+            }
+          }
+        }
+
+        f.clearAll = function() {
+          var r;
+
+          while (r = registered.pop()) {
+            clearTimeout( r );
+          }
+
+          this.timedOut = true;
+        };
+
+        f.timedOut = false;
+
+        return f;
+      }(window.setTimeout));
+
+      setTimeout(function() {
+
+        setTimeout.clearAll();
+        setInterval.clearAll();
+
+        // Stop Web Animations API
+        // Idea from Gregor: https://github.com/CodePen/CodePen-Bug-Reporting-Only/issues/173#issuecomment-203443301
+        // Status as of April 2020:
+        //  Chrome 80 = Stops animations
+        //  Firefox 75 = Stops animations
+        //  Safari 13 = Doesn't support WAAPI
+        //  Safari 13.1 = Stops animations
+
+        // Apparently this used to be done via `document.timeline`, but the modern method is to get the animations directly from the document.
+        let animations = ( typeof document.getAnimations === "function" && document.getAnimations() ) || (document.timeline && typeof document.timeline.getAnimations === "function" && document.timeline.getAnimations() )
+
+        if ( animations && animations.length ) {
+          animations.map(function(animation) {
+            animation.pause();
+          });
+        }
+
+      }, __animationDuration, "push");
+
+    }());
+  </script>
+
+</head>
+
+<body translate="no" onload="_l=&#39;t&#39;;">
+  <div id="clock"><svg id="clockItToMe" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 175 30"><defs><filter id="glow" x="-200%" y="-200%" width="1000%" height="1000%"><fegaussianblur in="SourceGraphic" stdDeviation="1.4"></fegaussianblur></filter><marker id="v" viewBox="0 0 10 10" refX="5" refY="2" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 2 l 2 -2 h 6 l 2 2 l -2 2 l -6 0 z" fill="#D5FF77"></path></marker><marker id="h" viewBox="0 0 10 10" refX="5" refY="8" markerWidth="8" markerHeight="8" orient="rotate(90deg)"><path d="M 0 2 l 2 -2 h 6 l 2 2 l -2 2 l -6 0 z" fill="#D5FF77"></path></marker><g id="nums" stroke="none" fill="none"><path d="M5 0v 10 10 60 50 30 30 10 50 10 20 30" marker-mid="url(#v)"></path><path d="M10 0v10 20 40 10 10 10 10 10 20 20 10 10 10 10 10 10 30 10 10 10 10 10 10" marker-mid="url(#h)"></path><path d="M15 0v10 10 20 10 20 30 10 20 10 30 30 20 10 20 10 20 10 20" marker-mid="url(#v)"></path></g></defs><g id="fullClock"><g class="hr10"><use href="#nums"></use><animatetransform id="hr10" attributeName="transform" type="translate" values="0 -30; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 -30; 0 -30" dur="43200s" begin="-4098s" repeatCount="indefinite" calcMode="discrete"></animatetransform></g><g class="hr"><use href="#nums" transform="translate(20)"></use><animatetransform id="hr" attributeName="transform" type="translate" values="0 -60; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270; 0 0; 0 -30" dur="43200s" begin="-4098s" repeatCount="indefinite" calcMode="discrete"></animatetransform></g><g class="min10"><use href="#nums" transform="translate(45)"></use><animatetransform id="min10" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150" dur="3600s" begin="-498s" repeatCount="indefinite" calcMode="discrete"></animatetransform></g><g class="min"><use href="#nums" transform="translate(65)"></use><animatetransform id="min" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270" dur="600s" begin="-498s" repeatCount="indefinite" calcMode="discrete"></animatetransform></g><g class="sec10"><use href="#nums" transform="translate(90)"></use><animatetransform id="sec10" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150" dur="60s" begin="-18s" repeatCount="indefinite" calcMode="discrete"></animatetransform></g><g class="sec"><use href="#nums" transform="translate(110)"></use><animatetransform id="sec" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270" dur="10s" begin="-8s" repeatCount="indefinite" calcMode="discrete"></animatetransform></g><g class="ms10"><use href="#nums" transform="translate(135)"></use><animatetransform id="ms10" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270" dur="1s" begin="0s" repeatCount="indefinite" calcMode="discrete"></animatetransform></g><g class="ms"><use href="#nums" transform="translate(155)"></use><animatetransform id="ms" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270" dur=".1s" begin="0s" repeatCount="indefinite" calcMode="discrete"></animatetransform></g><path d="M42.5 10 v0 m0 10 v0 M 87.5 10 v0 m0 10 v0M 132.5 10 v0 m0 10 v0" stroke="#80AACC" stroke-width="3" stroke-linecap="square"></path></g><use href="#fullClock" filter="url(#glow)"></use></svg></div>
+  
+      <script id="rendered-js">
+function initClock(elt, opt_properties) {
+  const defaultProperties = { color: '#0ff', date: new Date(), glow: true, militaryTime: false, showMs: true };
+  const c = Object.assign(defaultProperties, opt_properties);
+  !c.dotColor ? c.dotColor = defaultProperties.color : false;
+  const getSecondsPassed = (now = c.date, militaryTime = c.militaryTime) => {
+    const s10 = Math.floor(now.getSeconds());
+    const m10 = Math.floor(now.getMinutes() * 60 + s10);
+    const h = Math.floor(now.getHours() * 3600 + m10);
+    return { hour: h, minute10: m10, minute1: Math.floor(now.getMinutes() % 10 * 60 + s10), second10: s10, second1: Math.floor(now.getSeconds() % 10) };
+  };
+  let td = getSecondsPassed();
+  let vxEnd = c.showMs ? 175 : 130;
+  let showGlow = c.glow ? `<use href="#fullClock" filter="url(#glow)"/>` : '';
+  let showGlowBlur = c.glow ? `<filter id="glow" x="-200%" y="-200%" width="1000%" height="1000%"><feGaussianBlur in="SourceGraphic" stdDeviation="1.4" /></filter>` : '';
+  let hrDur = c.militaryTime ? '86400' : '43200';
+  let hr1Offsets = c.militaryTime ? `0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270; 0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270; 0 0; 0 -30; 0 -60; 0 -90` : `0 -60; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270; 0 0; 0 -30`;
+  let hr10Offsets = c.militaryTime ? `0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 -30; 0 -30; 0 -30; 0 -30; 0 -30; 0 -30; 0 -30; 0 -30; 0 -30; 0 -30; 0 -60; 0 -60; 0 -60; 0 -60` : `0 -30; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 -30; 0 -30`;
+  let msDots = c.showMs ? `M 132.5 10 v0 m0 10 v0` : '';
+  let milliseconds = c.showMs ? `<g class="ms10"><use href="#nums" transform="translate(135)" /><animateTransform id="ms10" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270" dur="1s" begin="0s" repeatCount="indefinite" calcMode="discrete" /></g><g class="ms"><use href="#nums" transform="translate(155)" /><animateTransform id="ms" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270" dur=".1s" begin="0s" repeatCount="indefinite" calcMode="discrete" /></g>` : '';
+  let svg = `<svg id="clockItToMe" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vxEnd} 30"><defs>${showGlowBlur}<marker id="v" viewBox="0 0 10 10" refX="5" refY="2" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 2 l 2 -2 h 6 l 2 2 l -2 2 l -6 0 z" fill="${c.color}" /></marker><marker id="h" viewBox="0 0 10 10" refX="5" refY="8" markerWidth="8" markerHeight="8" orient="rotate(90deg)"><path d="M 0 2 l 2 -2 h 6 l 2 2 l -2 2 l -6 0 z" fill="${c.color}" /></marker><g id="nums" stroke="none" fill="none"><path d="M5 0v 10 10 60 50 30 30 10 50 10 20 30" marker-mid="url(#v)" /><path d="M10 0v10 20 40 10 10 10 10 10 20 20 10 10 10 10 10 10 30 10 10 10 10 10 10" marker-mid="url(#h)" /><path d="M15 0v10 10 20 10 20 30 10 20 10 30 30 20 10 20 10 20 10 20" marker-mid="url(#v)" /></g></defs><g id="fullClock"><g class="hr10"><use href="#nums" /><animateTransform id="hr10" attributeName="transform" type="translate" values="${hr10Offsets}" dur="${hrDur}s" begin="-${td.hour}s" repeatCount="indefinite" calcMode="discrete" /></g><g class="hr"><use href="#nums" transform="translate(20)" /><animateTransform id="hr" attributeName="transform" type="translate" values="${hr1Offsets}" dur="${hrDur}s" begin="-${td.hour}s" repeatCount="indefinite" calcMode="discrete" /></g><g class="min10"><use href="#nums" transform="translate(45)" /><animateTransform id="min10" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150" dur="3600s" begin="-${td.minute10}s" repeatCount="indefinite" calcMode="discrete" /></g><g class="min"><use href="#nums" transform="translate(65)" /><animateTransform id="min" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270" dur="600s" begin="-${td.minute1}s" repeatCount="indefinite" calcMode="discrete" /></g><g class="sec10"><use href="#nums" transform="translate(90)" /><animateTransform id="sec10" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150" dur="60s" begin="-${td.second10}s" repeatCount="indefinite" calcMode="discrete" /></g><g class="sec"><use href="#nums" transform="translate(110)" /><animateTransform id="sec" attributeName="transform" type="translate" values="0 0; 0 -30; 0 -60; 0 -90; 0 -120; 0 -150; 0 -180; 0 -210; 0 -240; 0 -270" dur="10s" begin="-${td.second1}s" repeatCount="indefinite" calcMode="discrete" /></g>${milliseconds}<path d="M42.5 10 v0 m0 10 v0 M 87.5 10 v0 m0 10 v0${msDots}" stroke="${c.dotColor}" stroke-width="3" stroke-linecap="square" /></g>${showGlow}</svg>`;
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = svg;
+  const doc = wrapper.firstChild;
+  elt.appendChild(doc);
+}
+initClock(document.querySelector("#clock"), { color: '#D5FF77', dotColor: '#80AACC', showMs: true });
+//# sourceURL=pen.js
+    </script>
+
+    <script style="display: none !important;">
+  (function() {
+    var __animationDuration = 4000;
+
+    setTimeout(function() {
+      // If onload hasn't been called, stop all requests after 2 seconds
+      if (typeof(_l) == "undefined") {
+        if (window.stop !== undefined) window.stop();
+        else if (document.execCommand !== undefined) document.execCommand("Stop", false);
+      }
+    }, 2000, "push");
+
+    /*
+    * Capture and kill CSS animations after X number of seconds
+    */
+    function pauseAnimations() {
+      var body = document.getElementsByTagName("body")[0];
+
+      if (body.addEventListener) {
+        body.addEventListener("webkitAnimationStart", listener, false);
+        body.addEventListener("webkitAnimationIteration", listener, false);
+        body.addEventListener("animationstart", listener, false);
+        body.addEventListener("animationiteration", listener, false);
+      }
+    }
+
+    function listener(e) {
+
+      var targetEl;
+
+      if (e.type == "webkitAnimationStart" || e.type == "webkitAnimationIteration") {
+
+        targetEl = e.target;
+
+        setTimeout(function() {
+          targetEl.style.webkitAnimationPlayState = "paused";
+        }, __animationDuration, "push");
+
+      } else if (e.type == "animationstart" || e.type == "animationiteration") {
+
+        targetEl = e.target;
+
+        setTimeout(function() {
+          targetEl.style.MozAnimationPlayState = "paused";
+        }, __animationDuration, 'push');
+
+      }
+    }
+
+    pauseAnimations();
+
+    // Pause all audio elements, allow the audio/video
+    // elements to render before stopping them
+    function pauseElementTypes(type) {
+      for (var i = 0, els = document.getElementsByTagName(type); i < els.length; i++) {
+        els[i].pause();
+      }
+    }
+
+    // Wait until the elements have been created to pause them
+    setTimeout(function() {
+      pauseElementTypes("audio");
+      pauseElementTypes("video");
+    }, 100);
+
+  }());
+  </script>
+
+  <script src="./iframeRefreshCSS-44fe83e49b63affec96918c9af88c0d80b209a862cf87ac46bc933074b8c557d.js.download"></script>
+
+
+
+</body></html>
